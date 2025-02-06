@@ -14,6 +14,13 @@ use OpenApi\Attributes as OA;
 
 final class UserController extends AbstractController
 {
+    private EntityManagerInterface $entityManager;
+
+    public function __construct(EntityManagerInterface $entityManager)
+    {
+        $this->entityManager = $entityManager;
+    }
+
     #[Route("/api/users/register", methods: ["POST"])]
     #[OA\Post(
         path: "/api/users/register",
@@ -264,7 +271,10 @@ final class UserController extends AbstractController
             return new JsonResponse(['error' => 'Invalid credentials'], Response::HTTP_BAD_REQUEST);
         }
 
-        // Логика авторизации
+        $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $data['email']]);
+        if (!$user || $data['password'] !== $user->getPassword()) {
+            return new JsonResponse(['error' => 'Invalid credentials'], Response::HTTP_UNAUTHORIZED);
+        }
 
         return new JsonResponse(['message' => 'User logged in successfully']);
     }
