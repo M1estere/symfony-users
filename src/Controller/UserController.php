@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use OpenApi\Annotations as OA;
 
 final class UserController extends AbstractController
 {
@@ -18,9 +19,13 @@ final class UserController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        // Валидация данных
         if (!isset($data['email'], $data['password'])) {
             return new JsonResponse(['error' => 'Invalid data'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $existingUser = $em->getRepository(User::class)->findOneBy(['email' => $data['email']]);
+        if ($existingUser) {
+            return new JsonResponse(['error' => 'User already exists.'], Response::HTTP_CONFLICT);
         }
 
         $user = new User();
@@ -34,17 +39,23 @@ final class UserController extends AbstractController
     }
 
     #[Route('/api/users/{id}', methods: ['PUT'])]
-    public function updateUser(Request $request, User $user, EntityManagerInterface $em): Response
+    public function updateUser(Request $request, ?User $user, EntityManagerInterface $em): Response
     {
+        if (!$user) {
+            return new JsonResponse(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
         $data = json_decode($request->getContent(), true);
 
-        // Валидация данных
         if (isset($data['email'])) {
+            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                return new JsonResponse(['error' => 'Invalid email format.'], Response::HTTP_BAD_REQUEST);
+            }
             $user->setEmail($data['email']);
         }
 
         if (isset($data['password'])) {
-            $user->setPassword($data['password']); // Не забудьте закодировать пароль
+            $user->setPassword($data['password']);
         }
 
         $em->flush();
@@ -53,8 +64,12 @@ final class UserController extends AbstractController
     }
 
     #[Route('/api/users/{id}', methods: ['DELETE'])]
-    public function deleteUser(User $user, EntityManagerInterface $em): Response
+    public function deleteUser(?User $user, EntityManagerInterface $em): Response
     {
+        if (!$user) {
+            return new JsonResponse(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
         $em->remove($user);
         $em->flush();
 
@@ -66,29 +81,25 @@ final class UserController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        // Валидация данных
         if (!isset($data['email'], $data['password'])) {
             return new JsonResponse(['error' => 'Invalid credentials'], Response::HTTP_BAD_REQUEST);
         }
 
-        // Логика авторизации (например, проверка пользователя и генерация токена)
-        // Здесь вы можете использовать JWT или другой метод авторизации
+        // Логика авторизации
 
         return new JsonResponse(['message' => 'User logged in successfully']);
     }
 
     #[Route('/api/users/{id}', methods: ['GET'])]
-    public function getUserById(User $user): Response // Переименованный метод
+    public function getUserById(?User $user): Response
     {
+        if (!$user) {
+            return new JsonResponse(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
         return new JsonResponse([
             'id' => $user->getId(),
             'email' => $user->getEmail(),
         ]);
-    }
-
-    #[Route('/test', methods: ['GET'])]
-    public function test(): JsonResponse
-    {
-        return new JsonResponse(['message' => 'Test route works!']);
     }
 }
