@@ -2,7 +2,7 @@
 
 Список эндпоинтов API в `UserController` для управления пользователями.
 
-## Конечные точки
+## Эндпоинты
 
 ### Регистрация нового пользователя
 
@@ -133,3 +133,11 @@
       "error": "User not found"
     }
     ```
+
+## Swagger
+Также для каждого метода апи были добавлены swagger атрибуты
+![image](https://github.com/user-attachments/assets/4958d35c-207b-4124-8e6a-ffaf0373ef19)
+
+И добавлен маршрут **/api/doc**, по которому открывается сгенерированная документация апи
+![image](https://github.com/user-attachments/assets/0869545f-d692-4d8d-a094-eca9da60e8ac)
+
